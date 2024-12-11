@@ -2,6 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// Modifications 2024 Sam Anthony.
+
 // Package physic declares types for physical input, outputs and measurement
 // units.
 //
