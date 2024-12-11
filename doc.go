@@ -4,8 +4,7 @@
 
 // Modifications 2024 Sam Anthony.
 
-// Package physic declares types for physical input, outputs and measurement
-// units.
+// Package unit declares types for units of measurement.
 //
 // This includes temperature, humidity, pressure, tension, current, etc.
 //
@@ -21,4 +20,4 @@
 //	µ,u	micro	10⁻⁶  	0.000001
 //	n  	nano 	10⁻⁹  	0.000000001
 //	p  	pico 	10⁻¹² 	0.000000000001
-package physic
+package unit

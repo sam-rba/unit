@@ -4,7 +4,7 @@
 
 // Modifications 2024 Sam Anthony.
 
-package physic
+package unit
 
 import (
 	"bytes"

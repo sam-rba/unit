@@ -4,7 +4,7 @@
 
 // Modifications 2024 Sam Anthony.
 
-package physic_test
+package unit_test
 
 import (
 	"flag"
@@ -12,7 +12,7 @@ import (
 	"log"
 	"time"
 
-	"periph.io/x/conn/v3/physic"
+	"github.com/sam-rba/unit"
 )
 
 func ExampleAngle() {

@@ -4,11 +4,6 @@
 
 // Modifications 2024 Sam Anthony.
 
-module periph.io/x/conn/v3
+module github.com/sam-rba/unit
 
 go 1.22.6
-
-// Warning: do not add any external dependencies here unless absolutely necessary.
-// This package should primarily depend on the standard library.
-
-require github.com/jonboulle/clockwork v0.4.0
