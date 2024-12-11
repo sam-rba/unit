@@ -63,79 +63,6 @@ func (a Angle) String() string {
 	}
 }
 
-// Set sets the Angle to the value represented by s. Units are to be provided in
-// "rad", "deg" or "°" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (a *Angle) Set(s string) error {
-	d, n, err := atod(s)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s[n:], "Rad", "rad", "Deg", "deg", "°"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("Rad, Deg or °")
-			case errOverflowsInt64:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return maxValueErr(maxAngle.String())
-			case errOverflowsInt64Negative:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return minValueErr(minAngle.String())
-			}
-		}
-		return err
-	}
-
-	var si prefix
-	if n != len(s) {
-		r, rsize := utf8.DecodeRuneInString(s[n:])
-		if r <= 1 || rsize == 0 {
-			return errors.New("unexpected end of string")
-		}
-		var siSize int
-		si, siSize = parseSIPrefix(r)
-		n += siSize
-	}
-
-	switch s[n:] {
-	case "Deg", "deg", "°":
-		degreePerRadian := decimal{
-			base: 17453293,
-			exp:  0,
-			neg:  false,
-		}
-		deg, _ := decimalMul(d, degreePerRadian)
-		// Impossible for precision loss to exceed 9 since the number of
-		// significant figures in degrees per radian is only 8.
-		v, overflow := dtoi(deg, int(si))
-		if overflow {
-			if deg.neg {
-				return minValueErr(minAngle.String())
-			}
-			return maxValueErr(maxAngle.String())
-		}
-		*a = (Angle)(v)
-	case "Rad", "rad":
-		v, overflow := dtoi(d, int(si-nano))
-		if overflow {
-			if d.neg {
-				return minValueErr("-9.223G" + s[n:])
-			}
-			return maxValueErr("9.223G" + s[n:])
-		}
-		*a = (Angle)(v)
-	case "":
-		return noUnitErr("Rad, Deg or °")
-	default:
-		if found := hasSuffixes(s[n:], "Rad", "rad", "Deg", "deg", "°"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("Rad, Deg or °")
-	}
-	return nil
-}
-
 // Well known Angle constants.
 const (
 	NanoRadian  Angle = 1
@@ -162,112 +89,6 @@ type Distance int64
 // String returns the distance formatted as a string in metre.
 func (d Distance) String() string {
 	return nanoAsString(int64(d)) + "m"
-}
-
-// Set sets the Distance to the value represented by s. Units are to
-// be provided in "m", "Mile", "Yard", "in", or "ft" with an optional SI
-// prefix: "p", "n", "u", "µ", "m", "k", "M", "G" or "T".
-func (d *Distance) Set(s string) error {
-	dc, n, err := atod(s)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s[n:], "in", "ft", "Yard", "yard", "Mile", "mile", "m"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("m, Mile, in, ft or Yard")
-			case errOverflowsInt64:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return maxValueErr(maxDistance.String())
-			case errOverflowsInt64Negative:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return minValueErr(minDistance.String())
-			}
-		}
-		return err
-	}
-	si := prefix(unit)
-	if n != len(s) {
-		r, rsize := utf8.DecodeRuneInString(s[n:])
-		if r <= 1 || rsize == 0 {
-			return errors.New("unexpected end of string")
-		}
-		var siSize int
-		si, siSize = parseSIPrefix(r)
-		if si == milli || si == mega {
-			switch s[n:] {
-			case "m", "Mile", "mile":
-				si = unit
-			}
-		}
-		if si != unit {
-			n += siSize
-		}
-	}
-	v, overflow := dtoi(dc, int(si-nano))
-	if overflow {
-		if dc.neg {
-			return minValueErr(minDistance.String())
-		}
-		return maxValueErr(maxDistance.String())
-	}
-	switch s[n:] {
-	case "m":
-		*d = (Distance)(v)
-	case "Mile", "mile":
-		switch {
-		case v > maxMiles:
-			return maxValueErr("5731Mile")
-		case v < minMiles:
-			return minValueErr("-5731Mile")
-		case v >= 0:
-			*d = (Distance)((v*1609344 + 500) / 1000)
-		default:
-			*d = (Distance)((v*1609344 - 500) / 1000)
-		}
-	case "Yard", "yard":
-		switch {
-		case v > maxYards:
-			return maxValueErr("1 Million Yard")
-		case v < minYards:
-			return minValueErr("-1 Million Yard")
-		case v >= 0:
-			*d = (Distance)((v*9144 + 5000) / 10000)
-		default:
-			*d = (Distance)((v*9144 - 5000) / 10000)
-		}
-	case "ft":
-		switch {
-		case v > maxFeet:
-			return maxValueErr("3 Million ft")
-		case v < minFeet:
-			return minValueErr("-3 Million ft")
-		case v >= 0:
-			*d = (Distance)((v*3048 + 5000) / 10000)
-		default:
-			*d = (Distance)((v*3048 - 5000) / 10000)
-		}
-	case "in":
-		switch {
-		case v > maxInches:
-			return maxValueErr("36 Million inch")
-		case v < minInches:
-			return minValueErr("-36 Million inch")
-		case v >= 0:
-			*d = (Distance)((v*254 + 5000) / 10000)
-		default:
-			*d = (Distance)((v*254 - 5000) / 10000)
-		}
-	case "":
-		return noUnitErr("m, Mile, in, ft or Yard")
-	default:
-		if found := hasSuffixes(s[n:], "in", "ft", "Yard", "Mile", "m"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("m, Mile, in, ft or Yard")
-	}
-	return nil
 }
 
 // Well known Distance constants.
@@ -312,43 +133,6 @@ func (c ElectricCurrent) String() string {
 	return nanoAsString(int64(c)) + "A"
 }
 
-// Set sets the ElectricCurrent to the value represented by s. Units are to
-// be provided in "A" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (c *ElectricCurrent) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "A", "a"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("A")
-			case errOverflowsInt64:
-				return maxValueErr(maxElectricCurrent.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minElectricCurrent.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "A", "a":
-		*c = (ElectricCurrent)(v)
-	case "":
-		return noUnitErr("A")
-	default:
-		if found := hasSuffixes(s[n:], "A"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("A")
-	}
-
-	return nil
-}
-
 // Well known ElectricCurrent constants.
 const (
 	NanoAmpere  ElectricCurrent = 1
@@ -372,41 +156,6 @@ type ElectricPotential int64
 // String returns the tension formatted as a string in Volt.
 func (p ElectricPotential) String() string {
 	return nanoAsString(int64(p)) + "V"
-}
-
-// Set sets the ElectricPotential to the value represented by s. Units are to
-// be provided in "V" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (p *ElectricPotential) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "V", "v"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("V")
-			case errOverflowsInt64:
-				return maxValueErr(maxElectricPotential.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minElectricPotential.String())
-			}
-		}
-		return err
-	}
-	switch s[n:] {
-	case "V", "v":
-		*p = (ElectricPotential)(v)
-	case "":
-		return noUnitErr("V")
-	default:
-		if found := hasSuffixes(s[n:], "V", "v"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("V")
-	}
-	return nil
 }
 
 // Well known ElectricPotential constants.
@@ -433,42 +182,6 @@ type ElectricResistance int64
 // String returns the resistance formatted as a string in Ohm.
 func (r ElectricResistance) String() string {
 	return nanoAsString(int64(r)) + "Ω"
-}
-
-// Set sets the ElectricResistance to the value represented by s. Units are to
-// be provided in "Ohm", or "Ω" with an optional SI prefix: "p", "n", "u", "µ",
-// "m", "k", "M", "G" or "T".
-func (r *ElectricResistance) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "Ohm", "ohm", "Ω"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("Ohm or Ω")
-			case errOverflowsInt64:
-				return maxValueErr(maxElectricResistance.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minElectricResistance.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "Ohm", "ohm", "Ω":
-		*r = (ElectricResistance)(v)
-	case "":
-		return noUnitErr("Ohm or Ω")
-	default:
-		if found := hasSuffixes(s[n:], "Ohm", "ohm", "Ω"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("Ohm or Ω")
-	}
-	return nil
 }
 
 // Well known ElectricResistance constants.
@@ -499,81 +212,6 @@ type Force int64
 // String returns the force formatted as a string in Newton.
 func (f Force) String() string {
 	return nanoAsString(int64(f)) + "N"
-}
-
-// Set sets the Force to the value represented by s. Units are to
-// be provided in "N", or "lbf" (Pound force) with an optional SI prefix: "p",
-// "n", "u", "µ", "m", "k", "M", "G" or "T".
-func (f *Force) Set(s string) error {
-	d, n, err := atod(s)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s[n:], "N", "lbf"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("N or lbf")
-			case errOverflowsInt64:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return maxValueErr(maxForce.String())
-			case errOverflowsInt64Negative:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return minValueErr(minForce.String())
-			}
-		}
-		return err
-	}
-
-	var si prefix
-	if n != len(s) {
-		r, rsize := utf8.DecodeRuneInString(s[n:])
-		if r <= 1 || rsize == 0 {
-			return errors.New("unexpected end of string")
-		}
-		var siSize int
-		si, siSize = parseSIPrefix(r)
-
-		n += siSize
-	}
-
-	switch s[n:] {
-	case "lbf":
-		poundForce := decimal{
-			base: 4448221615261,
-			exp:  -3,
-			neg:  false,
-		}
-		lbf, loss := decimalMul(d, poundForce)
-		if loss > 9 {
-			return errors.New("converting to nano Newtons would overflow, consider using nN for maximum precision")
-		}
-		v, overflow := dtoi(lbf, int(si))
-		if overflow {
-			if lbf.neg {
-				return minValueErr("-2.073496519Glbf")
-			}
-			return maxValueErr("2.073496519Glbf")
-		}
-		*f = (Force)(v)
-	case "N":
-		v, overflow := dtoi(d, int(si-nano))
-		if overflow {
-			if d.neg {
-				return minValueErr(minForce.String())
-			}
-			return maxValueErr(maxForce.String())
-		}
-		*f = (Force)(v)
-	case "":
-		return noUnitErr("N or lbf")
-	default:
-		if found := hasSuffixes(s[n:], "N", "lbf"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("N or lbf")
-	}
-	return nil
 }
 
 // Well known Force constants.
@@ -607,42 +245,6 @@ type Frequency int64
 // String returns the frequency formatted as a string in Hertz.
 func (f Frequency) String() string {
 	return microAsString(int64(f)) + "Hz"
-}
-
-// Set sets the Frequency to the value represented by s. Units are to
-// be provided in "Hz" or "rpm" with an optional SI prefix: "p", "n", "u", "µ",
-// "m", "k", "M", "G" or "T".
-//
-// Unlike most Set() functions, "Hz" is assumed by default.
-func (f *Frequency) Set(s string) error {
-	v, n, err := valueOfUnitString(s, micro)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "Hz", "hz"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("Hz")
-			case errOverflowsInt64:
-				return maxValueErr(maxFrequency.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minFrequency.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "Hz", "hz", "":
-		*f = (Frequency)(v)
-	default:
-		if found := hasSuffixes(s[n:], "Hz", "hz"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("Hz")
-	}
-	return nil
 }
 
 // Period returns the duration of one cycle at this frequency.
@@ -710,92 +312,6 @@ func (m Mass) String() string {
 	return nanoAsString(int64(m)) + "g"
 }
 
-// Set sets the Mass to the value represented by s. Units are to be provided in
-// "g", "lb" or "oz" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (m *Mass) Set(s string) error {
-	d, n, err := atod(s)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s[n:], "g", "lb", "oz"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("g, lb or oz")
-			case errOverflowsInt64:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return maxValueErr(maxMass.String())
-			case errOverflowsInt64Negative:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return minValueErr(minMass.String())
-			}
-		}
-		return err
-	}
-
-	var si prefix
-	if n != len(s) {
-		r, rsize := utf8.DecodeRuneInString(s[n:])
-		if r <= 1 || rsize == 0 {
-			return errors.New("unexpected end of string")
-		}
-		var siSize int
-		si, siSize = parseSIPrefix(r)
-		n += siSize
-	}
-
-	switch s[n:] {
-	case "g":
-		v, overflow := dtoi(d, int(si-nano))
-		if overflow {
-			if d.neg {
-				return minValueErr(minMass.String())
-			}
-			return maxValueErr(maxMass.String())
-		}
-		*m = (Mass)(v)
-	case "lb":
-		gramsPerlb := decimal{
-			base: uint64(PoundMass),
-			exp:  0,
-			neg:  false,
-		}
-		lbs, _ := decimalMul(d, gramsPerlb)
-		v, overflow := dtoi(lbs, int(si))
-		if overflow {
-			if lbs.neg {
-				return minValueErr(strconv.FormatInt(int64(minPoundMass), 10) + "lb")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxPoundMass), 10) + "lb")
-		}
-		*m = (Mass)(v)
-	case "oz":
-		gramsPerOz := decimal{
-			base: uint64(OunceMass),
-			exp:  0,
-			neg:  false,
-		}
-		oz, _ := decimalMul(d, gramsPerOz)
-		v, overflow := dtoi(oz, int(si))
-		if overflow {
-			if oz.neg {
-				return minValueErr(strconv.FormatInt(int64(minOunceMass), 10) + "oz")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxOunceMass), 10) + "oz")
-		}
-		*m = (Mass)(v)
-	case "":
-		return noUnitErr("g, lb or oz")
-	default:
-		if found := hasSuffixes(s[n:], "g", "lb", "oz"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("g, lb or oz")
-	}
-	return nil
-}
-
 // Well known Mass constants.
 const (
 	NanoGram  Mass = 1
@@ -840,43 +356,6 @@ func (p Pressure) String() string {
 	return nanoAsString(int64(p)) + "Pa"
 }
 
-// Set sets the Pressure to the value represented by s. Units are to
-// be provided in "Pa" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (p *Pressure) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "Pa"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("Pa")
-			case errOverflowsInt64:
-				return maxValueErr(maxPressure.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minPressure.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "Pa":
-		*p = (Pressure)(v)
-	case "":
-		return noUnitErr("Pa")
-	default:
-		if found := hasSuffixes(s[n:], "Pa"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("Pa")
-	}
-
-	return nil
-}
-
 // Well known Pressure constants.
 const (
 	// Pascal is N/m², kg/m/s².
@@ -911,52 +390,6 @@ func (r RelativeHumidity) String() string {
 	return strconv.Itoa(int(r)/10) + "." + strconv.Itoa(frac) + "%rH"
 }
 
-// Set sets the RelativeHumidity to the value represented by s. Units are to
-// be provided in "%rH" or "%" with an optional SI prefix: "p", "n", "u", "µ",
-// "m", "k", "M", "G" or "T".
-func (r *RelativeHumidity) Set(s string) error {
-	// PercentRH is micro + deca.
-	v, n, err := valueOfUnitString(s, micro+deca)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s[n:], "%rH", "%"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("%rH or %")
-			case errOverflowsInt64:
-				return maxValueErr(maxRelativeHumidity.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minRelativeHumidity.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "%rH", "%":
-		// We need an extra check here to make sure that v will fit inside a
-		// int32.
-		switch {
-		case v > int64(maxRelativeHumidity):
-			return maxValueErr(maxRelativeHumidity.String())
-		case v < int64(minRelativeHumidity):
-			return minValueErr(minRelativeHumidity.String())
-		}
-		*r = (RelativeHumidity)(v)
-	case "":
-		return noUnitErr("%rH or %")
-	default:
-		if found := hasSuffixes(s[n:], "%rH", "%"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("%rH or %")
-	}
-
-	return nil
-}
-
 // Well known RelativeHumidity constants.
 const (
 	TenthMicroRH RelativeHumidity = 1                 // 0.00001%rH
@@ -977,120 +410,6 @@ type Speed int64
 // String returns the speed formatted as a string in m/s.
 func (sp Speed) String() string {
 	return nanoAsString(int64(sp)) + "m/s"
-}
-
-// Set sets the Speed to the value represented by s. Units are to be provided in
-// "mps"(meters per second), "m/s", "kph", "fps", or "mph" with an optional SI
-// prefix: "p", "n", "u", "µ", "m", "k", "M", "G" or "T".
-func (sp *Speed) Set(s string) error {
-	d, n, err := atod(s)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s[n:], "m/s", "mps", "kph", "fps", "mph"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("m/s, mps, kph, fps or mph")
-			case errOverflowsInt64:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return maxValueErr(maxSpeed.String())
-			case errOverflowsInt64Negative:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return minValueErr(minSpeed.String())
-			}
-		}
-		return err
-	}
-
-	var si prefix
-	if n != len(s) {
-		r, rsize := utf8.DecodeRuneInString(s[n:])
-		if r <= 1 || rsize == 0 {
-			return errors.New("unexpected end of string")
-		}
-		var siSize int
-		si, siSize = parseSIPrefix(r)
-		if si == milli {
-			switch s[n:] {
-			case "m/s", "mps", "mph":
-				si = unit
-				siSize = 0
-			}
-		}
-		if si == kilo {
-			switch s[n:] {
-			case "kph":
-				si = unit
-				siSize = 0
-			}
-		}
-		n += siSize
-	}
-	switch s[n:] {
-	case "m/s", "mps":
-		v, overflow := dtoi(d, int(si-nano))
-		if overflow {
-			if d.neg {
-				return minValueErr(minSpeed.String())
-			}
-			return maxValueErr(maxSpeed.String())
-		}
-		*sp = (Speed)(v)
-	case "kph":
-		mpsPerkph := decimal{
-			base: uint64(KilometrePerHour),
-			exp:  0,
-			neg:  false,
-		}
-		kph, _ := decimalMul(d, mpsPerkph)
-		v, overflow := dtoi(kph, int(si))
-		if overflow {
-			if kph.neg {
-				return minValueErr(strconv.FormatInt(int64(minKilometrePerHour), 10) + "kph")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxKilometrePerHour), 10) + "kph")
-		}
-		*sp = (Speed)(v)
-	case "fps":
-		mpsPerfps := decimal{
-			base: uint64(FootPerSecond / 1000),
-			exp:  3,
-			neg:  false,
-		}
-		oz, _ := decimalMul(d, mpsPerfps)
-		v, overflow := dtoi(oz, int(si))
-		if overflow {
-			if oz.neg {
-				return minValueErr(strconv.FormatInt(int64(minFootPerSecond), 10) + "fps")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxFootPerSecond), 10) + "fps")
-		}
-		*sp = (Speed)(v)
-	case "mph":
-		mpsPermph := decimal{
-			base: uint64(MilePerHour / 1000),
-			exp:  3,
-			neg:  false,
-		}
-		oz, _ := decimalMul(d, mpsPermph)
-		v, overflow := dtoi(oz, int(si))
-		if overflow {
-			if oz.neg {
-				return minValueErr(strconv.FormatInt(int64(minMilePerHour), 10) + "mph")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxMilePerHour), 10) + "mph")
-		}
-		*sp = (Speed)(v)
-	case "":
-		return noUnitErr("m/s, mps, kph, fps or mph")
-	default:
-		if found := hasSuffixes(s[n:], "m/s", "mps", "kph", "fps", "mph"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("m/s, mps, kph, fps or mph")
-	}
-	return nil
 }
 
 // Well known Speed constants.
@@ -1137,107 +456,6 @@ func (t Temperature) String() string {
 		return nanoAsString(int64(t)) + "K"
 	}
 	return nanoAsString(int64(t-ZeroCelsius)) + "°C"
-}
-
-// Set sets the Temperature to the value represented by s. Units are to be
-// provided in "C", "°C", "F", "°F" or "K" with an optional SI prefix: "p", "n",
-// "u", "µ", "m", "k", "M", "G" or "T".
-func (t *Temperature) Set(s string) error {
-	d, n, err := atod(s)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s[n:], "°C", "C", "°F", "F", "K"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("K, °C, C, °F or F")
-			case errOverflowsInt64:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return maxValueErr(maxTemperature.String())
-			case errOverflowsInt64Negative:
-				// TODO(maruel): Look for suffix, and reuse it.
-				return minValueErr(minTemperature.String())
-			}
-		}
-		return err
-	}
-
-	var si prefix
-	if n != len(s) {
-		r, rsize := utf8.DecodeRuneInString(s[n:])
-		if r <= 1 || rsize == 0 {
-			return errors.New("unexpected end of string")
-		}
-		var siSize int
-		si, siSize = parseSIPrefix(r)
-		n += siSize
-	}
-	switch s[n:] {
-	case "F", "°F":
-		// F to nK  nK = 555555555.556*F + 255372222222
-		fPerK := decimal{
-			base: 555555555556,
-			exp:  -3,
-			neg:  false,
-		}
-		f, _ := decimalMul(d, fPerK)
-		v, overflow := dtoi(f, int(si))
-		if overflow {
-			if f.neg {
-				return minValueErr("-459.67F")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxFahrenheit), 10) + "F")
-		}
-		// We need an extra check here to make sure that will not overflow with
-		// the addition of ZeroFahrenheit.
-		switch {
-		case v > int64(maxTemperature-ZeroFahrenheit):
-			return maxValueErr(strconv.FormatInt(int64(maxFahrenheit), 10) + "F")
-		case v < int64(-ZeroFahrenheit):
-			return minValueErr("-459.67F")
-		}
-		v += int64(ZeroFahrenheit)
-		*t = (Temperature)(v)
-	case "K":
-		v, overflow := dtoi(d, int(si-nano))
-		if overflow {
-			if d.neg {
-				return minValueErr("0K")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxTemperature/1000000000), 10) + "K")
-		}
-		if v < 0 {
-			return minValueErr("0K")
-		}
-		*t = (Temperature)(v)
-	case "C", "°C":
-		v, overflow := dtoi(d, int(si-nano))
-		if overflow {
-			if d.neg {
-				return minValueErr("-273.15°C")
-			}
-			return maxValueErr(strconv.FormatInt(int64(maxCelsius/1000000000), 10) + "°C")
-		}
-		// We need an extra check here to make sure that will not overflow with
-		// the addition of ZeroCelsius.
-		switch {
-		case v > int64(maxCelsius):
-			return maxValueErr(strconv.FormatInt(int64(maxCelsius/1000000000), 10) + "°C")
-		case v < int64(-ZeroCelsius):
-			return minValueErr("-273.15°C")
-		}
-		v += int64(ZeroCelsius)
-		*t = (Temperature)(v)
-	case "":
-		return noUnitErr("K, °C, C, °F or F")
-	default:
-		if found := hasSuffixes(s[n:], "°C", "C", "°F", "F", "K"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("K, °C, C, °F or F")
-	}
-	return nil
 }
 
 // Celsius returns the temperature as a floating number of °Celsius.
@@ -1290,43 +508,6 @@ func (p Power) String() string {
 	return nanoAsString(int64(p)) + "W"
 }
 
-// Set sets the Power to the value represented by s. Units are to
-// be provided in "W" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (p *Power) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "W", "w"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("W")
-			case errOverflowsInt64:
-				return maxValueErr(maxPower.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minPower.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "W", "w":
-		*p = (Power)(v)
-	case "":
-		return noUnitErr("W")
-	default:
-		if found := hasSuffixes(s[n:], "W", "w"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("W")
-	}
-
-	return nil
-}
-
 // Well known Power constants.
 const (
 	// Watt is unit of power J/s, kg⋅m²⋅s⁻³
@@ -1350,43 +531,6 @@ type Energy int64
 // String returns the energy formatted as a string in Joules.
 func (e Energy) String() string {
 	return nanoAsString(int64(e)) + "J"
-}
-
-// Set sets the Energy to the value represented by s. Units are to
-// be provided in "J" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (e *Energy) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "J", "j"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("J")
-			case errOverflowsInt64:
-				return maxValueErr(maxEnergy.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minEnergy.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "J", "j":
-		*e = (Energy)(v)
-	case "":
-		return noUnitErr("J")
-	default:
-		if found := hasSuffixes(s[n:], "J", "j"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("J")
-	}
-
-	return nil
 }
 
 // Well known Energy constants.
@@ -1422,43 +566,6 @@ func (c ElectricalCapacitance) String() string {
 	return picoAsString(int64(c)) + "F"
 }
 
-// Set sets the ElectricalCapacitance to the value represented by s. Units are
-// to be provided in "F" with an optional SI prefix: "p", "n", "u", "µ", "m",
-// "k", "M", "G" or "T".
-func (c *ElectricalCapacitance) Set(s string) error {
-	v, n, err := valueOfUnitString(s, pico)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "F", "f"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("F")
-			case errOverflowsInt64:
-				return maxValueErr(maxElectricalCapacitance.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minElectricalCapacitance.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "F", "f":
-		*c = (ElectricalCapacitance)(v)
-	case "":
-		return noUnitErr("F")
-	default:
-		if found := hasSuffixes(s[n:], "F", "f"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("F")
-	}
-
-	return nil
-}
-
 // Well known ElectricalCapacitance constants.
 const (
 	// Farad is a unit of capacitance. kg⁻¹⋅m⁻²⋅s⁴A²
@@ -1491,43 +598,6 @@ func (i LuminousIntensity) String() string {
 	return nanoAsString(int64(i)) + "cd"
 }
 
-// Set sets the LuminousIntensity to the value represented by s. Units are to
-// be provided in "cd" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (i *LuminousIntensity) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "cd"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("cd")
-			case errOverflowsInt64:
-				return maxValueErr(maxLuminousIntensity.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minLuminousIntensity.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "cd":
-		*i = (LuminousIntensity)(v)
-	case "":
-		return noUnitErr("cd")
-	default:
-		if found := hasSuffixes(s[n:], "cd"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("cd")
-	}
-
-	return nil
-}
-
 // Well known LuminousIntensity constants.
 const (
 	// Candela is a unit of luminous intensity. cd
@@ -1558,43 +628,6 @@ func (f LuminousFlux) String() string {
 	return nanoAsString(int64(f)) + "lm"
 }
 
-// Set sets the LuminousFlux to the value represented by s. Units are to
-// be provided in "lm" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
-// "M", "G" or "T".
-func (f *LuminousFlux) Set(s string) error {
-	v, n, err := valueOfUnitString(s, nano)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "lm"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("lm")
-			case errOverflowsInt64:
-				return maxValueErr(maxLuminousFlux.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minLuminousFlux.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "lm":
-		*f = (LuminousFlux)(v)
-	case "":
-		return noUnitErr("lm")
-	default:
-		if found := hasSuffixes(s[n:], "lm"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("lm")
-	}
-
-	return nil
-}
-
 // Well known LuminousFlux constants.
 const (
 	// Lumen is a unit of luminous flux. cd⋅sr
@@ -1618,43 +651,6 @@ type MagneticFluxDensity int64
 // String returns the energy formatted as a string in Farad.
 func (c MagneticFluxDensity) String() string {
 	return nanoAsString(int64(c)) + "T"
-}
-
-// Set sets the MagneticFluxDensity to the value represented by s. Units are
-// to be provided in "T" with an optional SI prefix: "p", "n", "u", "µ", "m",
-// "k", "M", "G" or "T".
-func (c *MagneticFluxDensity) Set(s string) error {
-	v, n, err := valueOfUnitString(s, pico)
-	if err != nil {
-		if e, ok := err.(*parseError); ok {
-			switch e.error {
-			case errNotANumber:
-				if found := hasSuffixes(s, "T", "t"); found != "" {
-					return err
-				}
-				return notNumberUnitErr("T")
-			case errOverflowsInt64:
-				return maxValueErr(maxMagneticFluxDensity.String())
-			case errOverflowsInt64Negative:
-				return minValueErr(minMagneticFluxDensity.String())
-			}
-		}
-		return err
-	}
-
-	switch s[n:] {
-	case "T", "t":
-		*c = (MagneticFluxDensity)(v)
-	case "":
-		return noUnitErr("T")
-	default:
-		if found := hasSuffixes(s[n:], "T", "t"); found != "" {
-			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
-		}
-		return incorrectUnitErr("T")
-	}
-
-	return nil
 }
 
 // Well known MagneticFluxDensity constants.
