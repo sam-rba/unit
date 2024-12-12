@@ -17,6 +17,26 @@ func (p Pressure) String() string {
 	return nanoAsString(int64(p)) + "Pa"
 }
 
+// Pa returns the pressure as a floating number of Pascals.
+func (p Pressure) Pa() float64 {
+	return float64(p) / float64(Pascal)
+}
+
+// KPa returns the pressure as a floating number of KiloPascals.
+func (p Pressure) KPa() float64 {
+	return float64(p) / float64(KiloPascal)
+}
+
+// MBar returns the pressure as a floating number of MilliBar.
+func (p Pressure) MBar() float64 {
+	return float64(p) / float64(MilliBar)
+}
+
+// Bar returns the pressure as a floating number of Bar.
+func (p Pressure) Bar() float64 {
+	return float64(p) / float64(Bar)
+}
+
 const (
 	// Pascal is N/m², kg/m/s².
 	NanoPascal  Pressure = 1
@@ -26,6 +46,9 @@ const (
 	KiloPascal  Pressure = 1000 * Pascal
 	MegaPascal  Pressure = 1000 * KiloPascal
 	GigaPascal  Pressure = 1000 * MegaPascal
+
+	MilliBar Pressure = 100 * Pascal
+	Bar      Pressure = 1000 * MilliBar
 
 	maxPressure = 9223372036854775807 * NanoPascal
 	minPressure = -9223372036854775807 * NanoPascal

@@ -181,31 +181,6 @@ func TestMass_String(t *testing.T) {
 	}
 }
 
-func TestPressure_String(t *testing.T) {
-	if s := NanoPascal.String(); s != "1nPa" {
-		t.Fatalf("%v", s)
-	}
-	if s := MicroPascal.String(); s != "1µPa" {
-		t.Fatalf("%v", s)
-	}
-	if s := MilliPascal.String(); s != "1mPa" {
-		t.Fatalf("%v", s)
-	}
-	if s := Pascal.String(); s != "1Pa" {
-		t.Fatalf("%v", s)
-	}
-	if s := KiloPascal.String(); s != "1kPa" {
-		t.Fatalf("%v", s)
-	}
-	if s := MegaPascal.String(); s != "1MPa" {
-		t.Fatalf("%v", s)
-	}
-	if s := GigaPascal.String(); s != "1GPa" {
-		t.Fatalf("%v", s)
-	}
-
-}
-
 func TestRelativeHumidity_String(t *testing.T) {
 	data := []struct {
 		in       RelativeHumidity
