@@ -7,7 +7,9 @@
 package unit_test
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/sam-rba/unit"
@@ -21,6 +23,36 @@ func ExampleAngle() {
 	// 1.000°
 	// 180.0°
 	// 360.0°
+}
+
+func ExampleAngle_Set() {
+	var a unit.Angle
+
+	if err := a.Set("2°"); err != nil {
+		log.Fatal(a)
+	}
+	fmt.Println(a)
+
+	if err := a.Set("90deg"); err != nil {
+		log.Fatal(a)
+	}
+	fmt.Println(a)
+
+	if err := a.Set("1rad"); err != nil {
+		log.Fatal(a)
+	}
+	fmt.Println(a)
+	// Output:
+	// 2.000°
+	// 90.00°
+	// 57.296°
+}
+
+func ExampleAngle_flag() {
+	var a unit.Angle
+
+	flag.Var(&a, "angle", "angle to set the servo to")
+	flag.Parse()
 }
 
 func ExampleAngle_float64() {
@@ -52,6 +84,37 @@ func ExampleDistance() {
 	// 1.609km
 }
 
+func ExampleDistance_Set() {
+	var d unit.Distance
+
+	if err := d.Set("1ft"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(d)
+
+	if err := d.Set("1m"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(d)
+
+	if err := d.Set("9Mile"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(d)
+	// Output:
+	// 304.800mm
+	// 1m
+	// 14.484km
+
+}
+
+func ExampleDistance_flag() {
+	var d unit.Distance
+
+	flag.Var(&d, "distance", "x axis travel length")
+	flag.Parse()
+}
+
 func ExampleDistance_float64() {
 	// Distance between the Earth and the Moon.
 	v := 384400 * unit.KiloMetre
@@ -79,6 +142,30 @@ func ExampleElectricalCapacitance() {
 	// 22pF
 }
 
+func ExampleElectricalCapacitance_Set() {
+	var c unit.ElectricalCapacitance
+
+	if err := c.Set("1F"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(c)
+
+	if err := c.Set("22pF"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(c)
+	// Output:
+	// 1F
+	// 22pF
+}
+
+func ExampleElectricalCapacitance_flag() {
+	var c unit.ElectricalCapacitance
+
+	flag.Var(&c, "mintouch", "minimum touch sensitivity")
+	flag.Parse()
+}
+
 func ExampleElectricalCapacitance_float64() {
 	// A typical condensator.
 	v := 4700 * unit.NanoFarad
@@ -101,6 +188,36 @@ func ExampleElectricCurrent() {
 	// 10.010A
 	// 10A
 	// -10mA
+}
+
+func ExampleElectricCurrent_Set() {
+	var e unit.ElectricCurrent
+
+	if err := e.Set("12.5mA"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(e)
+
+	if err := e.Set("2.4kA"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(e)
+
+	if err := e.Set("2A"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(e)
+	// Output:
+	// 12.500mA
+	// 2.400kA
+	// 2A
+}
+
+func ExampleElectricCurrent_flag() {
+	var m unit.ElectricCurrent
+
+	flag.Var(&m, "motor", "rated motor current")
+	flag.Parse()
 }
 
 func ExampleElectricCurrent_float64() {
@@ -127,6 +244,34 @@ func ExampleElectricPotential() {
 	// -10mV
 }
 
+func ExampleElectricPotential_Set() {
+	var v unit.ElectricPotential
+	if err := v.Set("250uV"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(v)
+
+	if err := v.Set("100kV"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(v)
+
+	if err := v.Set("12V"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(v)
+	// Output:
+	// 250µV
+	// 100kV
+	// 12V
+}
+
+func ExampleElectricPotential_flag() {
+	var v unit.ElectricPotential
+	flag.Var(&v, "cutout", "battery full charge voltage")
+	flag.Parse()
+}
+
 func ExampleElectricPotential_float64() {
 	// The level of Raspberry Pi GPIO when high.
 	v := 3300 * unit.MilliVolt
@@ -149,6 +294,36 @@ func ExampleElectricResistance() {
 	// 10.010Ω
 	// 10Ω
 	// 24MΩ
+}
+
+func ExampleElectricResistance_Set() {
+	var r unit.ElectricResistance
+
+	if err := r.Set("33.3kOhm"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(r)
+
+	if err := r.Set("1Ohm"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(r)
+
+	if err := r.Set("5MOhm"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(r)
+	// Output:
+	// 33.300kΩ
+	// 1Ω
+	// 5MΩ
+}
+
+func ExampleElectricResistance_flag() {
+	var r unit.ElectricResistance
+
+	flag.Var(&r, "shunt", "shunt resistor value")
+	flag.Parse()
 }
 
 func ExampleElectricResistance_float64() {
@@ -175,6 +350,31 @@ func ExampleEnergy() {
 	// 3.600MJ
 }
 
+func ExampleEnergy_Set() {
+	var e unit.Energy
+
+	if err := e.Set("2.6kJ"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(e)
+
+	if err := e.Set("45mJ"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(e)
+
+	// Output:
+	// 2.600kJ
+	// 45mJ
+}
+
+func ExampleEnergy_flag() {
+	var e unit.Energy
+
+	flag.Var(&e, "capacity", "capacity of battery")
+	flag.Parse()
+}
+
 func ExampleEnergy_float64() {
 	// BTU is used in barbecue rating. It is a measure of the thermal energy
 	// content of the of fuel consumed by the barbecue at its maximum rate. A
@@ -199,6 +399,31 @@ func ExampleForce() {
 	// 10mN
 	// 9.807N
 	// 4.448N
+}
+
+func ExampleForce_Set() {
+	var f unit.Force
+
+	if err := f.Set("9.8N"); err != nil {
+		log.Fatal(f)
+	}
+	fmt.Println(f)
+
+	if err := f.Set("20lbf"); err != nil {
+		log.Fatal(f)
+	}
+	fmt.Println(f)
+
+	// Output:
+	// 9.800N
+	// 88.964N
+}
+
+func ExampleForce_flag() {
+	var f unit.Force
+
+	flag.Var(&f, "force", "load cell wakeup force")
+	flag.Parse()
 }
 
 func ExampleForce_float64() {
@@ -240,6 +465,36 @@ func ExampleFrequency_Period() {
 	// 1µs
 }
 
+func ExampleFrequency_Set() {
+	var f unit.Frequency
+
+	if err := f.Set("10MHz"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(f)
+
+	if err := f.Set("10mHz"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(f)
+
+	if err := f.Set("1kHz"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(f)
+	// Output:
+	// 10MHz
+	// 10mHz
+	// 1kHz
+}
+
+func ExampleFrequency_flag() {
+	var pwm unit.Frequency
+
+	flag.Var(&pwm, "pwm", "pwm frequency")
+	flag.Parse()
+}
+
 func ExampleFrequency_float64() {
 	// NTSC color subcarrier.
 	v := (315*unit.MegaHertz + 44) / 88
@@ -268,6 +523,31 @@ func ExampleLuminousFlux() {
 	// 18.282klm
 }
 
+func ExampleLuminousFlux_Set() {
+	var l unit.LuminousFlux
+
+	if err := l.Set("25mlm"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(l)
+
+	if err := l.Set("2.5Mlm"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(l)
+
+	// Output:
+	// 25mlm
+	// 2.500Mlm
+}
+
+func ExampleLuminousFlux_flag() {
+	var l unit.LuminousFlux
+
+	flag.Var(&l, "low", "mood light level")
+	flag.Parse()
+}
+
 func ExampleLuminousFlux_float64() {
 	// Typical output of a 7W LED.
 	v := 450 * unit.Lumen
@@ -286,6 +566,25 @@ func ExampleLuminousIntensity() {
 	fmt.Println(12 * unit.Candela)
 	// Output:
 	// 12cd
+}
+
+func ExampleLuminousIntensity_Set() {
+	var l unit.LuminousIntensity
+
+	if err := l.Set("16cd"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(l)
+
+	// Output:
+	// 16cd
+}
+
+func ExampleLuminousIntensity_flag() {
+	var l unit.LuminousIntensity
+
+	flag.Var(&l, "dusk", "light level to turn on light")
+	flag.Parse()
 }
 
 func ExampleLuminousIntensity_float64() {
@@ -315,6 +614,42 @@ func ExampleMass() {
 	// 14.594kg
 }
 
+func ExampleMass_Set() {
+	var m unit.Mass
+
+	if err := m.Set("10mg"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(m)
+
+	if err := m.Set("16.5kg"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(m)
+
+	if err := m.Set("2.2oz"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(m)
+
+	if err := m.Set("16lb"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(m)
+	// Output:
+	// 10mg
+	// 16.500kg
+	// 62.369g
+	// 7.257kg
+}
+
+func ExampleMass_flag() {
+	var m unit.Mass
+
+	flag.Var(&m, "weight", "amount of cat food to dispense")
+	flag.Parse()
+}
+
 func ExampleMass_float64() {
 	// Weight of a Loonie (Canadian metal piece).
 	v := 6270 * unit.MilliGram
@@ -339,6 +674,37 @@ func ExamplePower() {
 	// 1.210GW
 }
 
+func ExamplePower_Set() {
+	var p unit.Power
+
+	if err := p.Set("25mW"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(p)
+
+	if err := p.Set("1W"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(p)
+
+	if err := p.Set("1.21GW"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(p)
+
+	// Output:
+	// 25mW
+	// 1W
+	// 1.210GW
+}
+
+func ExamplePower_flag() {
+	var p unit.Power
+
+	flag.Var(&p, "power", "heater maximum power")
+	flag.Parse()
+}
+
 func ExamplePower_float64() {
 	// Maximum emitted power by Bluetooth class 2 device.
 	v := 2500 * unit.MicroWatt
@@ -361,6 +727,30 @@ func ExamplePressure() {
 	// 101kPa
 }
 
+func ExamplePressure_Set() {
+	var p unit.Pressure
+
+	if err := p.Set("300kPa"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(p)
+
+	if err := p.Set("16MPa"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(p)
+	// Output:
+	// 300kPa
+	// 16MPa
+}
+
+func ExamplePressure_flag() {
+	var p unit.Pressure
+
+	flag.Var(&p, "setpoint", "pressure for pump to maintain")
+	flag.Parse()
+}
+
 func ExamplePressure_float64() {
 	// A typical tire pressure in North America (33psi).
 	v := 227526990 * unit.MicroPascal
@@ -381,6 +771,30 @@ func ExampleRelativeHumidity() {
 	// Output:
 	// 50.6%rH
 	// 20%rH
+}
+
+func ExampleRelativeHumidity_Set() {
+	var r unit.RelativeHumidity
+
+	if err := r.Set("50.6%rH"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(r)
+
+	if err := r.Set("20%"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(r)
+	// Output:
+	// 50.6%rH
+	// 20%rH
+}
+
+func ExampleRelativeHumidity_flag() {
+	var h unit.RelativeHumidity
+
+	flag.Var(&h, "humidity", "green house humidity high alarm level")
+	flag.Parse()
 }
 
 func ExampleRelativeHumidity_float64() {
@@ -409,6 +823,42 @@ func ExampleSpeed() {
 	// 277.778mm/s
 	// 447.040mm/s
 	// 304.800mm/s
+}
+
+func ExampleSpeed_Set() {
+	var s unit.Speed
+
+	if err := s.Set("10m/s"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(s)
+
+	if err := s.Set("100kph"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(s)
+
+	if err := s.Set("2067fps"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(s)
+
+	if err := s.Set("55mph"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(s)
+	// Output:
+	// 10m/s
+	// 27.778m/s
+	// 630.022m/s
+	// 24.587m/s
+}
+
+func ExampleSpeed_flag() {
+	var s unit.Speed
+
+	flag.Var(&s, "speed", "window shutter closing speed")
+	flag.Parse()
 }
 
 func ExampleSpeed_float64() {
@@ -471,6 +921,49 @@ func ExampleTemperature_Fahrenheit() {
 	// Output:
 	// 37°C
 	// 98.6°F
+}
+
+func ExampleTemperature_Set() {
+	var t unit.Temperature
+
+	if err := t.Set("0°C"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(t)
+
+	if err := t.Set("1C"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(t)
+
+	if err := t.Set("5MK"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(t)
+
+	if err := t.Set("0°F"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(t)
+
+	if err := t.Set("32F"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(t)
+
+	// Output:
+	// 0°C
+	// 1°C
+	// 5M°C
+	// -17.778°C
+	// 0°C
+}
+
+func ExampleTemperature_flag() {
+	var t unit.Temperature
+
+	flag.Var(&t, "temp", "thermostat setpoint")
+	flag.Parse()
 }
 
 func ExampleTemperature_float64() {
