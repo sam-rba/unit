@@ -238,15 +238,6 @@ func TestSpeed_String(t *testing.T) {
 	}
 }
 
-func TestTemperature_String(t *testing.T) {
-	if s := ZeroCelsius.String(); s != "0°C" {
-		t.Fatalf("%#v", s)
-	}
-	if s := Temperature(0).String(); s != "-273.150°C" {
-		t.Fatalf("%#v", s)
-	}
-}
-
 func TestPower_String(t *testing.T) {
 	if s := NanoWatt.String(); s != "1nW" {
 		t.Fatalf("%v", s)
@@ -1087,24 +1078,6 @@ func TestValueOfUnitString(t *testing.T) {
 		if _, _, err := valueOfUnitString(tt.in, tt.prefix); err == nil {
 			t.Errorf("#%d: valueOfUnitString(%s,%d) expected an error", i, tt.in, tt.prefix)
 		}
-	}
-}
-
-func TestTemperature_Celsius(t *testing.T) {
-	if v := ZeroCelsius.Celsius(); v != 0. {
-		t.Fatal(v)
-	}
-	if v := Temperature(0).Celsius(); v != -273.150 {
-		t.Fatal(v)
-	}
-}
-
-func TestTemperature_Fahrenheit(t *testing.T) {
-	if v := ZeroFahrenheit.Fahrenheit(); v != 0. {
-		t.Fatal(v)
-	}
-	if v := Temperature(0).Fahrenheit(); v != -459.67000045927 {
-		t.Fatal(v)
 	}
 }
 

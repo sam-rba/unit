@@ -21,13 +21,18 @@ func (t Temperature) String() string {
 	return nanoAsString(int64(t-ZeroCelsius)) + "°C"
 }
 
-// Celsius returns the temperature as a floating number of °Celsius.
-func (t Temperature) Celsius() float64 {
+// K returns the temperature as a floating number of °Kelvin.
+func (t Temperature) K() float64 {
+	return float64(t) / float64(Kelvin)
+}
+
+// C returns the temperature as a floating number of °Celsius.
+func (t Temperature) C() float64 {
 	return float64(t-ZeroCelsius) / float64(Celsius)
 }
 
-// Fahrenheit returns the temperature as a floating number of °Fahrenheit.
-func (t Temperature) Fahrenheit() float64 {
+// F returns the temperature as a floating number of °Fahrenheit.
+func (t Temperature) F() float64 {
 	return float64(t-ZeroFahrenheit) / float64(Fahrenheit)
 }
 

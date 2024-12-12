@@ -450,7 +450,7 @@ func ExampleTemperature_Celsius() {
 	v := 37*unit.Celsius + unit.ZeroCelsius
 
 	// Convert to float64 as Celsius.
-	f := v.Celsius()
+	f := v.C()
 
 	fmt.Println(v)
 	fmt.Printf("%.1f°C\n", f)
@@ -464,7 +464,7 @@ func ExampleTemperature_Fahrenheit() {
 	v := 37*unit.Celsius + unit.ZeroCelsius
 
 	// Convert to float64 as Fahrenheit.
-	f := v.Fahrenheit()
+	f := v.F()
 
 	fmt.Println(v)
 	fmt.Printf("%.1f°F\n", f)
