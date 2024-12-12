@@ -23,6 +23,43 @@ func (i LuminousIntensity) String() string {
 	return nanoAsString(int64(i)) + "cd"
 }
 
+// Set sets the LuminousIntensity to the value represented by s. Units are to
+// be provided in "cd" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
+// "M", "G" or "T".
+func (i *LuminousIntensity) Set(s string) error {
+	v, n, err := valueOfUnitString(s, nano)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "cd"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("cd")
+			case errOverflowsInt64:
+				return maxValueErr(maxLuminousIntensity.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minLuminousIntensity.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "cd":
+		*i = (LuminousIntensity)(v)
+	case "":
+		return noUnitErr("cd")
+	default:
+		if found := hasSuffixes(s[n:], "cd"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("cd")
+	}
+
+	return nil
+}
+
 const (
 	// Candela is a unit of luminous intensity. cd
 	NanoCandela  LuminousIntensity = 1

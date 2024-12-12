@@ -27,6 +27,52 @@ func (r RelativeHumidity) String() string {
 	return strconv.Itoa(int(r)/10) + "." + strconv.Itoa(frac) + "%rH"
 }
 
+// Set sets the RelativeHumidity to the value represented by s. Units are to
+// be provided in "%rH" or "%" with an optional SI prefix: "p", "n", "u", "µ",
+// "m", "k", "M", "G" or "T".
+func (r *RelativeHumidity) Set(s string) error {
+	// PercentRH is micro + deca.
+	v, n, err := valueOfUnitString(s, micro+deca)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s[n:], "%rH", "%"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("%rH or %")
+			case errOverflowsInt64:
+				return maxValueErr(maxRelativeHumidity.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minRelativeHumidity.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "%rH", "%":
+		// We need an extra check here to make sure that v will fit inside a
+		// int32.
+		switch {
+		case v > int64(maxRelativeHumidity):
+			return maxValueErr(maxRelativeHumidity.String())
+		case v < int64(minRelativeHumidity):
+			return minValueErr(minRelativeHumidity.String())
+		}
+		*r = (RelativeHumidity)(v)
+	case "":
+		return noUnitErr("%rH or %")
+	default:
+		if found := hasSuffixes(s[n:], "%rH", "%"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("%rH or %")
+	}
+
+	return nil
+}
+
 const (
 	TenthMicroRH RelativeHumidity = 1                 // 0.00001%rH
 	MicroRH      RelativeHumidity = 10 * TenthMicroRH // 0.0001%rH

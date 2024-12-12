@@ -21,6 +21,43 @@ func (f LuminousFlux) String() string {
 	return nanoAsString(int64(f)) + "lm"
 }
 
+// Set sets the LuminousFlux to the value represented by s. Units are to
+// be provided in "lm" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
+// "M", "G" or "T".
+func (f *LuminousFlux) Set(s string) error {
+	v, n, err := valueOfUnitString(s, nano)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "lm"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("lm")
+			case errOverflowsInt64:
+				return maxValueErr(maxLuminousFlux.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minLuminousFlux.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "lm":
+		*f = (LuminousFlux)(v)
+	case "":
+		return noUnitErr("lm")
+	default:
+		if found := hasSuffixes(s[n:], "lm"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("lm")
+	}
+
+	return nil
+}
+
 const (
 	// Lumen is a unit of luminous flux. cd⋅sr
 	NanoLumen  LuminousFlux = 1

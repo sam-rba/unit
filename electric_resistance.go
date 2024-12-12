@@ -17,6 +17,42 @@ func (r ElectricResistance) String() string {
 	return nanoAsString(int64(r)) + "Ω"
 }
 
+// Set sets the ElectricResistance to the value represented by s. Units are to
+// be provided in "Ohm", or "Ω" with an optional SI prefix: "p", "n", "u", "µ",
+// "m", "k", "M", "G" or "T".
+func (r *ElectricResistance) Set(s string) error {
+	v, n, err := valueOfUnitString(s, nano)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "Ohm", "ohm", "Ω"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("Ohm or Ω")
+			case errOverflowsInt64:
+				return maxValueErr(maxElectricResistance.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minElectricResistance.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "Ohm", "ohm", "Ω":
+		*r = (ElectricResistance)(v)
+	case "":
+		return noUnitErr("Ohm or Ω")
+	default:
+		if found := hasSuffixes(s[n:], "Ohm", "ohm", "Ω"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("Ohm or Ω")
+	}
+	return nil
+}
+
 const (
 	// Ohm is V/A, kg⋅m²/s³/A².
 	NanoOhm  ElectricResistance = 1

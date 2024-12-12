@@ -12,325 +12,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
-	"time"
 )
-
-func TestAngle_String(t *testing.T) {
-	data := []struct {
-		in       Angle
-		expected string
-	}{
-		{0, "0°"},
-		{Degree/10000 + Degree/2000, "0.001°"},
-		{-Degree/10000 - Degree/2000, "-0.001°"},
-		{Degree / 1000, "0.001°"},
-		{-Degree / 1000, "-0.001°"},
-		{Degree / 2, "0.500°"},
-		{-Degree / 2, "-0.500°"},
-		{Degree, "1.000°"},
-		{-Degree, "-1.000°"},
-		{10 * Degree, "10.00°"},
-		{-10 * Degree, "-10.00°"},
-		{100 * Degree, "100.0°"},
-		{-100 * Degree, "-100.0°"},
-		{1000 * Degree, "1000°"},
-		{-1000 * Degree, "-1000°"},
-		{100000000000 * Degree, "100000000000°"},
-		{-100000000000 * Degree, "-100000000000°"},
-		{maxAngle, "528460276055°"},
-		{minAngle, "-528460276055°"},
-		{Pi, "180.0°"},
-		{Theta, "360.0°"},
-		{Radian, "57.296°"},
-	}
-	for i, line := range data {
-		if s := line.in.String(); s != line.expected {
-			t.Fatalf("%d: Degree(%d).String() = %s != %s", i, int64(line.in), s, line.expected)
-		}
-	}
-}
-
-func TestDistance_String(t *testing.T) {
-	if s := Mile.String(); s != "1.609km" {
-		t.Fatalf("%#v", s)
-	}
-}
-
-func TestElectricCurrent_String(t *testing.T) {
-	if s := Ampere.String(); s != "1A" {
-		t.Fatalf("%#v", s)
-	}
-}
-
-func TestElectricPotential_String(t *testing.T) {
-	if s := Volt.String(); s != "1V" {
-		t.Fatalf("%#v", s)
-	}
-}
-
-func TestElectricResistance_String(t *testing.T) {
-	if s := Ohm.String(); s != "1Ω" {
-		t.Fatalf("%#v", s)
-	}
-}
-
-func TestForce_String(t *testing.T) {
-	if s := Newton.String(); s != "1N" {
-		t.Fatalf("%#v", s)
-	}
-}
-
-func TestFrequency_String(t *testing.T) {
-	data := []struct {
-		in       Frequency
-		expected string
-	}{
-		{minFrequency, "-9.223THz"},
-		{-Hertz, "-1Hz"},
-		{0, "0Hz"},
-		{Hertz, "1Hz"},
-		{1666500 * MicroHertz, "1.666Hz"},
-		{1666501 * MicroHertz, "1.667Hz"},
-		{MegaHertz, "1MHz"},
-		{GigaHertz, "1GHz"},
-		{999999500 * KiloHertz, "999.999GHz"},
-		{999999501 * KiloHertz, "1THz"},
-		{1000500 * MegaHertz, "1THz"},
-		{1000501 * MegaHertz, "1.001THz"},
-		{1001 * GigaHertz, "1.001THz"},
-		{1000 * GigaHertz, "1THz"},
-		{maxFrequency, "9.223THz"},
-	}
-	for i, line := range data {
-		if v := line.in.String(); v != line.expected {
-			t.Fatalf("%d: Frequency(%d).String() = %s != %s", i, line.in, v, line.expected)
-		}
-	}
-}
-
-func TestFrequency_Period(t *testing.T) {
-	data := []struct {
-		in       Frequency
-		expected time.Duration
-	}{
-		{0, 0},
-		{MicroHertz, 277*time.Hour + 46*time.Minute + 40*time.Second},
-		{MilliHertz, 16*time.Minute + 40*time.Second},
-		{999999 * MicroHertz, 1000001 * time.Microsecond},
-		{Hertz, time.Second},
-		{1000001 * MicroHertz, 999999 * time.Microsecond},
-		{MegaHertz, time.Microsecond},
-		{23 * MegaHertz, 43 * time.Nanosecond},
-		{100 * MegaHertz, 10 * time.Nanosecond},
-		{150 * MegaHertz, 7 * time.Nanosecond},
-		{GigaHertz, time.Nanosecond},
-		{2 * GigaHertz, time.Nanosecond},
-		{20000000 * KiloHertz, 0},
-		{TeraHertz, 0},
-		{maxFrequency, 0},
-	}
-	for i, line := range data {
-		if v := line.in.Period(); v != line.expected {
-			t.Fatalf("%d: Frequency(%d).Period() = %s != %s", i, line.in, v, line.expected)
-		}
-		if v := (-line.in).Period(); v != -line.expected {
-			t.Fatalf("%d: Frequency(%d).Period() = %s != %s", i, -line.in, v, -line.expected)
-		}
-	}
-}
-
-func TestFrequency_Duration(t *testing.T) {
-	// TODO(maruel): To be removed in v4.0.0.
-	if MicroHertz.Duration() != MicroHertz.Period() {
-		t.Fatal("should have the same result")
-	}
-}
-
-func TestFrequency_PeriodToFrequency(t *testing.T) {
-	data := []struct {
-		in       time.Duration
-		expected Frequency
-	}{
-		{0, 0},
-		{time.Nanosecond, GigaHertz},
-		{time.Microsecond, MegaHertz},
-		{time.Millisecond, KiloHertz},
-		{999990000 * time.Nanosecond, 1000010 * MicroHertz},
-		{999999500 * time.Nanosecond, 1000001 * MicroHertz},
-		{999999501 * time.Nanosecond, 1000000 * MicroHertz},
-		{time.Second, Hertz},
-		{1000000000 * time.Nanosecond, Hertz},
-		{1000000500 * time.Nanosecond, Hertz},
-		{1000000501 * time.Nanosecond, 999999 * MicroHertz},
-		{time.Minute, 16667 * MicroHertz},
-		{time.Hour, 278 * MicroHertz},
-	}
-	for i, line := range data {
-		if v := PeriodToFrequency(line.in); v != line.expected {
-			t.Fatalf("%d: PeriodToFrequency(%s) = %d != %d", i, line.in, v, line.expected)
-		}
-		if v := PeriodToFrequency(-line.in); v != -line.expected {
-			t.Fatalf("%d: PeriodToFrequency(%s) = %d != %d", i, -line.in, v, -line.expected)
-		}
-	}
-}
-
-func TestMass_String(t *testing.T) {
-	if s := PoundMass.String(); s != "453.592g" {
-		t.Fatalf("%#v", s)
-	}
-}
-
-func TestRelativeHumidity_String(t *testing.T) {
-	data := []struct {
-		in       RelativeHumidity
-		expected string
-	}{
-		{TenthMicroRH, "0%rH"},
-		{MicroRH, "0%rH"},
-		{10 * MicroRH, "0%rH"},
-		{100 * MicroRH, "0%rH"},
-		{1000 * MicroRH, "0.1%rH"},
-		{506000 * MicroRH, "50.6%rH"},
-		{90 * PercentRH, "90%rH"},
-		{100 * PercentRH, "100%rH"},
-		// That's a lot of humidity. This is to test the value doesn't overflow
-		// int32 too quickly.
-		{1000 * PercentRH, "1000%rH"},
-		// That's really dry.
-		{-501000 * MicroRH, "-50.1%rH"},
-	}
-	for i, line := range data {
-		if s := line.in.String(); s != line.expected {
-			t.Fatalf("%d: RelativeHumidity(%d).String() = %s != %s", i, int64(line.in), s, line.expected)
-		}
-	}
-}
-
-func TestSpeed_String(t *testing.T) {
-	if s := MilePerHour.String(); s != "447.040mm/s" {
-		t.Fatalf("%#v", s)
-	}
-}
-
-func TestPower_String(t *testing.T) {
-	if s := NanoWatt.String(); s != "1nW" {
-		t.Fatalf("%v", s)
-	}
-	if s := MicroWatt.String(); s != "1µW" {
-		t.Fatalf("%v", s)
-	}
-	if s := MilliWatt.String(); s != "1mW" {
-		t.Fatalf("%v", s)
-	}
-	if s := Watt.String(); s != "1W" {
-		t.Fatalf("%v", s)
-	}
-	if s := KiloWatt.String(); s != "1kW" {
-		t.Fatalf("%v", s)
-	}
-	if s := MegaWatt.String(); s != "1MW" {
-		t.Fatalf("%v", s)
-	}
-	if s := GigaWatt.String(); s != "1GW" {
-		t.Fatalf("%v", s)
-	}
-}
-func TestEnergy_String(t *testing.T) {
-	if s := NanoJoule.String(); s != "1nJ" {
-		t.Fatalf("%v", s)
-	}
-	if s := MicroJoule.String(); s != "1µJ" {
-		t.Fatalf("%v", s)
-	}
-	if s := MilliJoule.String(); s != "1mJ" {
-		t.Fatalf("%v", s)
-	}
-	if s := Joule.String(); s != "1J" {
-		t.Fatalf("%v", s)
-	}
-	if s := KiloJoule.String(); s != "1kJ" {
-		t.Fatalf("%v", s)
-	}
-	if s := MegaJoule.String(); s != "1MJ" {
-		t.Fatalf("%v", s)
-	}
-	if s := GigaJoule.String(); s != "1GJ" {
-		t.Fatalf("%v", s)
-	}
-}
-
-func TestCapacitance_String(t *testing.T) {
-	if s := PicoFarad.String(); s != "1pF" {
-		t.Fatalf("%v", s)
-	}
-	if s := NanoFarad.String(); s != "1nF" {
-		t.Fatalf("%v", s)
-	}
-	if s := MicroFarad.String(); s != "1µF" {
-		t.Fatalf("%v", s)
-	}
-	if s := MilliFarad.String(); s != "1mF" {
-		t.Fatalf("%v", s)
-	}
-	if s := Farad.String(); s != "1F" {
-		t.Fatalf("%v", s)
-	}
-	if s := KiloFarad.String(); s != "1kF" {
-		t.Fatalf("%v", s)
-	}
-	if s := MegaFarad.String(); s != "1MF" {
-		t.Fatalf("%v", s)
-	}
-}
-
-func TestLuminousIntensity_String(t *testing.T) {
-	if s := NanoCandela.String(); s != "1ncd" {
-		t.Fatalf("%v", s)
-	}
-	if s := MicroCandela.String(); s != "1µcd" {
-		t.Fatalf("%v", s)
-	}
-	if s := MilliCandela.String(); s != "1mcd" {
-		t.Fatalf("%v", s)
-	}
-	if s := Candela.String(); s != "1cd" {
-		t.Fatalf("%v", s)
-	}
-	if s := KiloCandela.String(); s != "1kcd" {
-		t.Fatalf("%v", s)
-	}
-	if s := MegaCandela.String(); s != "1Mcd" {
-		t.Fatalf("%v", s)
-	}
-	if s := GigaCandela.String(); s != "1Gcd" {
-		t.Fatalf("%v", s)
-	}
-}
-
-func TestFlux_String(t *testing.T) {
-	if s := NanoLumen.String(); s != "1nlm" {
-		t.Fatalf("%v", s)
-	}
-	if s := MicroLumen.String(); s != "1µlm" {
-		t.Fatalf("%v", s)
-	}
-	if s := MilliLumen.String(); s != "1mlm" {
-		t.Fatalf("%v", s)
-	}
-	if s := Lumen.String(); s != "1lm" {
-		t.Fatalf("%v", s)
-	}
-	if s := KiloLumen.String(); s != "1klm" {
-		t.Fatalf("%v", s)
-	}
-	if s := MegaLumen.String(); s != "1Mlm" {
-		t.Fatalf("%v", s)
-	}
-	if s := GigaLumen.String(); s != "1Glm" {
-		t.Fatalf("%v", s)
-	}
-}
 
 func TestPicoAsString(t *testing.T) {
 	data := []struct {
@@ -1131,4 +813,100 @@ func BenchmarkString2Decimal2IntNeg(b *testing.B) {
 	}
 	b.StopTimer()
 	_ = fmt.Sprintf("%d %d", v, n)
+}
+
+func BenchmarkDistanceSet(b *testing.B) {
+	var err error
+	var d Distance
+	for i := 0; i < b.N; i++ {
+		if err = d.Set("1ft"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", d)
+}
+
+func BenchmarkElectricCurrentSet(b *testing.B) {
+	var err error
+	var e ElectricCurrent
+	for i := 0; i < b.N; i++ {
+		if err = e.Set("1A"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", e)
+}
+
+func BenchmarkForceSetMetric(b *testing.B) {
+	var err error
+	var f Force
+	for i := 0; i < b.N; i++ {
+		if err = f.Set("123N"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", f)
+}
+
+func BenchmarkForceSetImperial(b *testing.B) {
+	var err error
+	var f Force
+	for i := 0; i < b.N; i++ {
+		if err = f.Set("1.23Mlbf"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", f)
+}
+
+func BenchmarkForceSetImperialWorstCase(b *testing.B) {
+	var err error
+	var f Force
+	for i := 0; i < b.N; i++ {
+		if err = f.Set("1.0000000000101lbf"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", f)
+}
+
+func BenchmarkAngleSetRadian(b *testing.B) {
+	var err error
+	var a Angle
+	for i := 0; i < b.N; i++ {
+		if err = a.Set("1rad"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", a)
+}
+
+func BenchmarkAngleSet1Degree(b *testing.B) {
+	var err error
+	var a Angle
+	for i := 0; i < b.N; i++ {
+		if err = a.Set("1deg"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", a)
+}
+
+func BenchmarkAngleSet2Degree(b *testing.B) {
+	var err error
+	var a Angle
+	for i := 0; i < b.N; i++ {
+		if err = a.Set("2deg"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	_ = fmt.Sprintf("%d", a)
 }

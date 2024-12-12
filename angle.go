@@ -6,7 +6,11 @@
 
 package unit
 
-import "strconv"
+import (
+	"errors"
+	"strconv"
+	"unicode/utf8"
+)
 
 // Angle is the measurement of the difference in orientation between two vectors
 // stored as an int64 nano radian.
@@ -55,6 +59,79 @@ func (a Angle) String() string {
 		v := (a + Degree/2) / Degree
 		return prefix + strconv.FormatInt(int64(v), 10) + "°"
 	}
+}
+
+// Set sets the Angle to the value represented by s. Units are to be provided in
+// "rad", "deg" or "°" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
+// "M", "G" or "T".
+func (a *Angle) Set(s string) error {
+	d, n, err := atod(s)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s[n:], "Rad", "rad", "Deg", "deg", "°"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("Rad, Deg or °")
+			case errOverflowsInt64:
+				// TODO(maruel): Look for suffix, and reuse it.
+				return maxValueErr(maxAngle.String())
+			case errOverflowsInt64Negative:
+				// TODO(maruel): Look for suffix, and reuse it.
+				return minValueErr(minAngle.String())
+			}
+		}
+		return err
+	}
+
+	var si prefix
+	if n != len(s) {
+		r, rsize := utf8.DecodeRuneInString(s[n:])
+		if r <= 1 || rsize == 0 {
+			return errors.New("unexpected end of string")
+		}
+		var siSize int
+		si, siSize = parseSIPrefix(r)
+		n += siSize
+	}
+
+	switch s[n:] {
+	case "Deg", "deg", "°":
+		degreePerRadian := decimal{
+			base: 17453293,
+			exp:  0,
+			neg:  false,
+		}
+		deg, _ := decimalMul(d, degreePerRadian)
+		// Impossible for precision loss to exceed 9 since the number of
+		// significant figures in degrees per radian is only 8.
+		v, overflow := dtoi(deg, int(si))
+		if overflow {
+			if deg.neg {
+				return minValueErr(minAngle.String())
+			}
+			return maxValueErr(maxAngle.String())
+		}
+		*a = (Angle)(v)
+	case "Rad", "rad":
+		v, overflow := dtoi(d, int(si-nano))
+		if overflow {
+			if d.neg {
+				return minValueErr("-9.223G" + s[n:])
+			}
+			return maxValueErr("9.223G" + s[n:])
+		}
+		*a = (Angle)(v)
+	case "":
+		return noUnitErr("Rad, Deg or °")
+	default:
+		if found := hasSuffixes(s[n:], "Rad", "rad", "Deg", "deg", "°"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("Rad, Deg or °")
+	}
+	return nil
 }
 
 const (

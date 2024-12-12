@@ -19,6 +19,43 @@ func (c ElectricCurrent) String() string {
 	return nanoAsString(int64(c)) + "A"
 }
 
+// Set sets the ElectricCurrent to the value represented by s. Units are to
+// be provided in "A" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
+// "M", "G" or "T".
+func (c *ElectricCurrent) Set(s string) error {
+	v, n, err := valueOfUnitString(s, nano)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "A", "a"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("A")
+			case errOverflowsInt64:
+				return maxValueErr(maxElectricCurrent.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minElectricCurrent.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "A", "a":
+		*c = (ElectricCurrent)(v)
+	case "":
+		return noUnitErr("A")
+	default:
+		if found := hasSuffixes(s[n:], "A"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("A")
+	}
+
+	return nil
+}
+
 const (
 	NanoAmpere  ElectricCurrent = 1
 	MicroAmpere ElectricCurrent = 1000 * NanoAmpere

@@ -17,6 +17,43 @@ func (p Pressure) String() string {
 	return nanoAsString(int64(p)) + "Pa"
 }
 
+// Set sets the Pressure to the value represented by s. Units are to
+// be provided in "Pa" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
+// "M", "G" or "T".
+func (p *Pressure) Set(s string) error {
+	v, n, err := valueOfUnitString(s, nano)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "Pa"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("Pa")
+			case errOverflowsInt64:
+				return maxValueErr(maxPressure.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minPressure.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "Pa":
+		*p = (Pressure)(v)
+	case "":
+		return noUnitErr("Pa")
+	default:
+		if found := hasSuffixes(s[n:], "Pa"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("Pa")
+	}
+
+	return nil
+}
+
 // Pa returns the pressure as a floating number of Pascals.
 func (p Pressure) Pa() float64 {
 	return float64(p) / float64(Pascal)

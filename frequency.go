@@ -19,6 +19,42 @@ func (f Frequency) String() string {
 	return microAsString(int64(f)) + "Hz"
 }
 
+// Set sets the Frequency to the value represented by s. Units are to
+// be provided in "Hz" or "rpm" with an optional SI prefix: "p", "n", "u", "µ",
+// "m", "k", "M", "G" or "T".
+//
+// Unlike most Set() functions, "Hz" is assumed by default.
+func (f *Frequency) Set(s string) error {
+	v, n, err := valueOfUnitString(s, micro)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "Hz", "hz"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("Hz")
+			case errOverflowsInt64:
+				return maxValueErr(maxFrequency.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minFrequency.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "Hz", "hz", "":
+		*f = (Frequency)(v)
+	default:
+		if found := hasSuffixes(s[n:], "Hz", "hz"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("Hz")
+	}
+	return nil
+}
+
 // Period returns the duration of one cycle at this frequency.
 //
 // Frequency above GigaHertz cannot be represented as Duration.

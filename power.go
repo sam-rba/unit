@@ -16,6 +16,43 @@ func (p Power) String() string {
 	return nanoAsString(int64(p)) + "W"
 }
 
+// Set sets the Power to the value represented by s. Units are to
+// be provided in "W" with an optional SI prefix: "p", "n", "u", "µ", "m", "k",
+// "M", "G" or "T".
+func (p *Power) Set(s string) error {
+	v, n, err := valueOfUnitString(s, nano)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "W", "w"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("W")
+			case errOverflowsInt64:
+				return maxValueErr(maxPower.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minPower.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "W", "w":
+		*p = (Power)(v)
+	case "":
+		return noUnitErr("W")
+	default:
+		if found := hasSuffixes(s[n:], "W", "w"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("W")
+	}
+
+	return nil
+}
+
 const (
 	// Watt is unit of power J/s, kg⋅m²⋅s⁻³
 	NanoWatt  Power = 1

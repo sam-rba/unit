@@ -16,6 +16,43 @@ func (c MagneticFluxDensity) String() string {
 	return nanoAsString(int64(c)) + "T"
 }
 
+// Set sets the MagneticFluxDensity to the value represented by s. Units are
+// to be provided in "T" with an optional SI prefix: "p", "n", "u", "µ", "m",
+// "k", "M", "G" or "T".
+func (c *MagneticFluxDensity) Set(s string) error {
+	v, n, err := valueOfUnitString(s, pico)
+	if err != nil {
+		if e, ok := err.(*parseError); ok {
+			switch e.error {
+			case errNotANumber:
+				if found := hasSuffixes(s, "T", "t"); found != "" {
+					return err
+				}
+				return notNumberUnitErr("T")
+			case errOverflowsInt64:
+				return maxValueErr(maxMagneticFluxDensity.String())
+			case errOverflowsInt64Negative:
+				return minValueErr(minMagneticFluxDensity.String())
+			}
+		}
+		return err
+	}
+
+	switch s[n:] {
+	case "T", "t":
+		*c = (MagneticFluxDensity)(v)
+	case "":
+		return noUnitErr("T")
+	default:
+		if found := hasSuffixes(s[n:], "T", "t"); found != "" {
+			return unknownUnitPrefixErr(found, "p,n,u,µ,m,k,M,G or T")
+		}
+		return incorrectUnitErr("T")
+	}
+
+	return nil
+}
+
 const (
 	// Tesla is a unit of magnetic flux density.
 	NanoTesla  MagneticFluxDensity = 1
